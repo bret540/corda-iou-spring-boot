@@ -1,0 +1,8 @@
+corda:
+  user: user1
+  password: test
+  host: localhost:10006
+management:
+  health:
+    jms:
+      enabled: false
