@@ -1,0 +1,16 @@
+applications:
+- name: corda-iou-spring-boot-test
+  routes:
+    - route: ${name}.us-east-1.np.paas.lmig.com
+  buildpack: java_current
+  instances: 1
+  memory: 1024M
+  timeout: 180
+  env:
+    NEW_RELIC_APP_NAME: corda-iou-spring-boot
+    SPRING_PROFILES_ACTIVE: "test"
+  services:
+    - newrelic
+    - everyday-curfew
+  blue-green:
+    health-check-endpoint: /health

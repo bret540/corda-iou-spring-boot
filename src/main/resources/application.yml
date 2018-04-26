@@ -1,8 +1,25 @@
 corda:
-  user: user1
-  password: test
-  host: localhost:10006
+  liberty:
+    user: liberty
+    password: snow
+    host: liberty-corda-node-dev.aws.lmig.com:443
+  swissre:
+    user: liberty
+    password: snow
+    host: swissre-corda-node-dev.aws.lmig.com:443
 management:
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: "*"
   health:
     jms:
       enabled: false
+logging:
+  file: corda-iou-spring-boot-log.txt
+  level:
+    com:
+      lmig: DEBUG
+server:
+  port: 8080

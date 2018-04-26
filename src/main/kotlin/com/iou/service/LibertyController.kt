@@ -1,6 +1,5 @@
 package com.iou.service
 
-import com.example.api.SERVICE_NAMES
 import com.example.flow.ExampleFlow.Initiator
 import com.example.state.IOUState
 import net.corda.core.identity.CordaX500Name
@@ -16,30 +15,30 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api")
-class Controller {
+@RequestMapping("/api/liberty")
+class LibertyController(@Autowired val libertyRpcClient: CordaRPCOps ) {
     companion object {
         private val logger = contextLogger()
     }
 
-    @Autowired
-    lateinit var rpcOps: CordaRPCOps
-
     @GetMapping("/peers")
     fun getPeers(): Map<String, List<CordaX500Name>> {
-        val nodeInfo = rpcOps.networkMapSnapshot()
-        val myLegalName: CordaX500Name = rpcOps.nodeInfo().legalIdentities.first().name
+        val nodeInfo = libertyRpcClient.networkMapSnapshot()
+        val myLegalName: CordaX500Name = libertyRpcClient.nodeInfo().legalIdentities.first().name
         return mapOf("peers" to nodeInfo
                 .map { it.legalIdentities.first().name }
                 //filter out myself, notary and eventual network map started by driver
-                .filter { it.organisation !in (SERVICE_NAMES + myLegalName.organisation) })
+                .filter { it.organisation !in (listOf("Notary", "Network Map Service") + myLegalName.organisation) })
     }
 
     @GetMapping("/networksnapshot")
-    fun networkSnapshot() = rpcOps.networkMapSnapshot().toString()
+    fun networkSnapshot() = libertyRpcClient.networkMapSnapshot().toString()
+
+    @GetMapping("/flows")
+    fun flows() = libertyRpcClient.registeredFlows()
 
     @GetMapping("/ious")
-    fun getIOUs() = rpcOps.vaultQueryBy<IOUState>().states
+    fun getIOUs() = libertyRpcClient.vaultQueryBy<IOUState>().states
 
     @PutMapping("/iou")
     fun createIOU(@RequestParam("iouValue") iouValue: Int, @RequestParam("partyName") partyName: String?): ResponseEntity<String> {
@@ -49,10 +48,11 @@ class Controller {
         if (partyName == null) {
             return ResponseEntity.status(BAD_REQUEST).body("Query parameter 'partyName' missing or has wrong format.\n")
         }
-        val otherParty = rpcOps.wellKnownPartyFromX500Name(CordaX500Name.parse(partyName)) ?: return ResponseEntity.status(BAD_REQUEST).body("Party named $partyName cannot be found.\n")
+        val otherParty = libertyRpcClient.wellKnownPartyFromX500Name(CordaX500Name.parse(partyName))
+                ?: return ResponseEntity.status(BAD_REQUEST).body("Party named $partyName cannot be found.  Please choose one of: ${getPeers()}\n")
 
         return try {
-            val flowHandle = rpcOps.startTrackedFlow(::Initiator, iouValue, otherParty)
+            val flowHandle = libertyRpcClient.startTrackedFlow(::Initiator, iouValue, otherParty)
             val subscribe = flowHandle.progress.subscribe()
             val signedTransaction = flowHandle.returnValue.getOrThrow()
             subscribe.unsubscribe()
