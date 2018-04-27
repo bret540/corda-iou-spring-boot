@@ -31,7 +31,7 @@ class LibertyController(@Autowired val libertyRpcClient: CordaRPCOps ) {
                 .filter { it.organisation !in (listOf("Notary", "Network Map Service") + myLegalName.organisation) })
     }
 
-    @GetMapping("/networksnapshot")
+    @GetMapping
     fun networkSnapshot() = libertyRpcClient.networkMapSnapshot().toString()
 
     @GetMapping("/flows")

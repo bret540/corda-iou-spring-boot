@@ -4,4 +4,4 @@
 out
 gen
 target
-*log.txt*
+corda-iou-spring-boot-log.txt*
